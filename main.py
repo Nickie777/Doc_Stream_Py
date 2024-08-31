@@ -65,46 +65,24 @@ def learn_model():
 # Метод для предсказания типа изображения
 @app.route('/predictModel', methods=['POST'])
 def predict_model():
-    if 'file' not in request.files:
-        return 'Файл не найден', 400
-    file = request.files['file']
-
-    if file.filename == '':
-        return 'Имя файла не указано', 400
-
-    if file and file.filename.endswith('.jpg'):
-        # Построение безопасного имени файла
-        filename = secure_filename(file.filename)
-
-        # Построение полного пути к файлу
-        full_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-
-        # Сохранение файла
-        file.save(full_path)
-
+        data = request.json
+        image_path = data.get('image_path')
+        if not os.path.exists(image_path):
+            return jsonify({"error": "Image path does not exist."}), 400
         # Загрузка модели
         model_path = "models/model_0.pkl"
+        if not os.path.exists(model_path):
+            return jsonify({"error": "Model path does not exist."}), 400
         model = joblib.load(model_path)
 
         # Открываем и обрабатываем изображение
-        image = Image.open(full_path)
+        image = Image.open(image_path)
         image_array = np.array(image).flatten()
 
         # Предсказание
         prediction = model.predict([image_array])[0]
 
         return jsonify({"predicted_type": int(prediction)})
-    else:
-        return 'Неверный формат файла', 400 #  data = request.json
- #  model_path = data.get('model_path')
- #  image_path = data.get('image_path')
-
- #  if not os.path.exists(model_path):
- #      return jsonify({"error": "Model path does not exist."}), 400
-
- #  if not os.path.exists(image_path):
- #      return jsonify({"error": "Image path does not exist."}), 400
-
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
