@@ -1,4 +1,5 @@
 import cv2
+import pytesseract
 from flask import Flask, request, jsonify
 import os
 import joblib
@@ -7,6 +8,11 @@ from PIL import Image
 import numpy as np
 from werkzeug.utils import secure_filename
 from pyzbar.pyzbar import decode
+import re
+
+# Укажите полный путь к исполняемому файлу Tesseract
+pytesseract.pytesseract.tesseract_cmd = r'C:\Users\Пользователь\AppData\Local\Tesseract-OCR\tesseract.exe'
+
 
 app = Flask(__name__)
 
@@ -131,6 +137,67 @@ def get_qr():
     qr_data = qr_codes[0].data.decode('utf-8')
 
     return jsonify({"qr_code": qr_data})
+
+
+@app.route('/getText', methods=['POST'])
+def get_text():
+    data = request.json
+    image_path = data.get('image_path')
+
+    if not os.path.exists(image_path):
+        return jsonify({"error": "Image path does not exist."}), 400
+
+    # Загружаем изображение с использованием OpenCV
+    image = cv2.imread(image_path)
+
+    if image is None:
+        return jsonify({"error": "Failed to open image."}), 400
+
+    # Преобразуем изображение в оттенки серого
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+    # Применяем размытие для уменьшения шума
+    gray = cv2.medianBlur(gray, 3)
+
+    # Настройки Tesseract для русского языка
+    custom_config = r'--oem 3 --psm 6 -l rus'
+
+    try:
+        # Распознаем текст
+        recognized_text = pytesseract.image_to_string(gray, config=custom_config)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    # Обновленное регулярное выражение для поиска пар "номер-дата"
+    pattern_pair = re.compile(
+        r'(?:№|Номер)\s*[-—]*\s*([А-Яа-яA-Za-z0-9\-]+)\s*(?:-|—| )*\s*от\s*(\d{1,2}\s*\w+\s*\d{4}|\d{2}\.\d{2}\.\d{4})', re.IGNORECASE)
+
+    # Регулярные выражения для поиска отдельных номеров, дат и ИНН
+    pattern_number = re.compile(r'(?:№|Номер)\s*[-—]*\s*([А-Яа-яA-Za-z0-9\-]+)', re.IGNORECASE)
+    pattern_date = re.compile(r'(\d{1,2}\s*\w+\s*\d{4}|\d{2}\.\d{2}\.\d{4})')
+    pattern_inn = re.compile(r'\b[1-9]\d{9}\b')  # Регулярное выражение для поиска ИНН
+
+    # Найти все пары "номер-дата"
+    pairs = pattern_pair.findall(recognized_text)
+
+    # Найти все номера, даты и ИНН
+    numbers = pattern_number.findall(recognized_text)
+    dates = pattern_date.findall(recognized_text)
+    inns = pattern_inn.findall(recognized_text)
+
+    # Формируем коллекцию непарных номеров и дат
+    unpaired_numbers = [num for num in numbers if num not in [pair[0] for pair in pairs]]
+    unpaired_dates = [date for date in dates if date not in [pair[1] for pair in pairs]]
+
+    response = {
+        "pairs": pairs,
+        "unpaired_numbers": unpaired_numbers,
+        "unpaired_dates": unpaired_dates,
+        "inns": inns
+    }
+
+    return jsonify(response)
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
