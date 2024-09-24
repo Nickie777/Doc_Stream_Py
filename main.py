@@ -11,8 +11,8 @@ from pyzbar.pyzbar import decode
 import re
 
 # Укажите полный путь к исполняемому файлу Tesseract
-pytesseract.pytesseract.tesseract_cmd = r'C:\Users\Пользователь\AppData\Local\Tesseract-OCR\tesseract.exe'
-
+#pytesseract.pytesseract.tesseract_cmd = r'C:\Users\Пользователь\AppData\Local\Tesseract-OCR\tesseract.exe'
+pytesseract.pytesseract.tesseract_cmd  = r'C:\Users\Administrator\AppData\Local\Tesseract-OCR\tesseract.exe'
 
 app = Flask(__name__)
 
