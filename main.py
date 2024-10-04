@@ -12,7 +12,7 @@ import re
 
 # Укажите полный путь к исполняемому файлу Tesseract
 #pytesseract.pytesseract.tesseract_cmd = r'C:\Users\Пользователь\AppData\Local\Tesseract-OCR\tesseract.exe'
-pytesseract.pytesseract.tesseract_cmd  = r'C:\Users\Administrator\AppData\Local\Tesseract-OCR\tesseract.exe'
+pytesseract.pytesseract.tesseract_cmd  = r'C:\Doc_Stream_Py\Tesseract-OCR\tesseract.exe'
 
 app = Flask(__name__)
 
@@ -22,6 +22,10 @@ UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 model_path = "models/model_0.pkl"
+# Целевые пути
+# "models/images/learning"
+# "models/images/predict"
+
 # Задаем целевой размер для всех изображений
 TARGET_IMAGE_SIZE = (3508, 2479)
 
