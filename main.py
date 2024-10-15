@@ -9,6 +9,7 @@ import numpy as np
 from werkzeug.utils import secure_filename
 from pyzbar.pyzbar import decode
 import re
+import base64
 
 # Укажите полный путь к исполняемому файлу Tesseract
 #pytesseract.pytesseract.tesseract_cmd = r'C:\Users\Пользователь\AppData\Local\Tesseract-OCR\tesseract.exe'
@@ -38,6 +39,26 @@ def preprocess_image(image_path):
     image = image.resize(TARGET_IMAGE_SIZE)
 
     return image
+
+#Метод получения двоичных данных по пути
+@app.route('/getFileData', methods=['GET'])
+def get_file_data():
+    file_path = request.args.get('file_path')  # Получаем полный путь к файлу из параметров запроса
+
+    if not os.path.exists(file_path) or not os.path.isfile(file_path):
+        return jsonify({"error": "File does not exist."}), 400
+
+    try:
+        with open(file_path, 'rb') as f:
+            file_data = f.read()  # Читаем двоичные данные файла
+
+        # Кодируем двоичные данные в Base64
+        file_data_base64 = base64.b64encode(file_data).decode('utf-8')
+
+        return jsonify({"file_data": file_data_base64})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 # Метод для создания пустой модели
 @app.route('/createModel', methods=['POST'])
