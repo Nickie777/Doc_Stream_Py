@@ -1,3 +1,5 @@
+import shutil
+
 import cv2
 import pytesseract
 from flask import Flask, request, jsonify
@@ -96,9 +98,8 @@ def get_file_list():
 @app.route('/learnModel', methods=['POST'])
 def learn_model():
     data = request.json
-    #model_path = data.get('model_path')
-    image_path = data.get('image_path')
-    image_type = data.get('image_type')
+    image_path = data.get('image_path')  # Путь к файлу изображения
+    image_type = data.get('image_type')  # Тип изображения
 
     if not os.path.exists(model_path):
         return jsonify({"error": "Model path does not exist."}), 400
@@ -111,10 +112,6 @@ def learn_model():
 
     # Открываем и обрабатываем изображение
     image = preprocess_image(image_path)
-
-    # Приводим изображение к целевому размеру
-    #image = image.resize(TARGET_IMAGE_SIZE)
-
     image_array = np.array(image).flatten()
 
     # Проверяем, если у модели нет обучающих данных, создаем их
@@ -131,8 +128,23 @@ def learn_model():
     # Сохраняем модель
     joblib.dump(model, model_path)
 
+    # Путь к папке архива
+    archive_dir = r'C:\Doc_Stream_Py\images\learning__archive'
+
+    # Создаем папку, если она не существует
+    os.makedirs(archive_dir, exist_ok=True)
+
+    # Формируем путь назначения для перемещения файла
+    archive_path = os.path.join(archive_dir, os.path.basename(image_path))
+
+    try:
+        # Перемещаем файл в папку архива
+        shutil.move(image_path, archive_path)
+    except Exception as e:
+        return jsonify({"error": f"Failed to move the image to archive: {str(e)}"}), 500
+
     # Возвращаем успешный ответ
-    return jsonify({"message": "Model trained successfully."})
+    return jsonify({"message": "Model trained successfully. Image moved to archive."})
 
 # Метод для предсказания типа изображения
 @app.route('/predictModel', methods=['POST'])
