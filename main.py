@@ -47,6 +47,29 @@ def create_model():
     joblib.dump(model, model_path)
     return jsonify({"model_path": model_path})
 
+# Метод для получения путей к файлам
+@app.route('/getFileList', methods=['GET'])
+def get_file_list():
+    folder_name = request.args.get('folder_name')  # Получаем путь к папке из параметров запроса
+
+    if not os.path.exists(folder_name) or not os.path.isdir(folder_name):
+        return jsonify({"error": "Folder does not exist."}), 400
+
+    file_list = []
+    for filename in os.listdir(folder_name):
+        file_path = os.path.join(folder_name, filename)
+
+        # Проверяем, является ли файл изображением (можно добавить дополнительные проверки по необходимости)
+        if os.path.isfile(file_path):
+            with open(file_path, 'rb') as f:
+                file_data = f.read()  # Считываем двоичные данные файла
+            file_list.append({
+                "file_name": filename,
+                "file_path": file_path
+                #"file_data": file_data.decode('latin1')  # Преобразуем в строку, если нужно
+            })
+
+    return jsonify({"files": file_list})
 
 # Метод для обучения модели
 @app.route('/learnModel', methods=['POST'])
@@ -204,4 +227,4 @@ def get_text():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=80)
